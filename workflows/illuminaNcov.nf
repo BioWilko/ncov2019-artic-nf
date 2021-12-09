@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 // enable dsl2
-nextflow.preview.dsl = 2
+nextflow.enable.dsl = 2
 
 // import modules
 include {articDownloadScheme } from '../modules/artic.nf' 
@@ -12,6 +12,7 @@ include {trimPrimerSequences} from '../modules/illumina.nf'
 include {callVariants} from '../modules/illumina.nf'
 include {makeConsensus} from '../modules/illumina.nf' 
 include {cramToFastq} from '../modules/illumina.nf'
+include {lenFilter} from '../modules/illumina.nf'
 
 include {makeQCCSV} from '../modules/qc.nf'
 include {writeQCSummaryCSV} from '../modules/qc.nf'
@@ -74,7 +75,7 @@ workflow prepareReferenceFiles {
     }
 
     emit:
-      bwaindex = ch_preparedRef
+      mmindex = ch_preparedRef
       bedfile = ch_bedFile
       reffasta = ch_refFasta
 }
@@ -91,11 +92,13 @@ workflow sequenceAnalysis {
 
       readMapping(readTrimming.out.combine(ch_preparedRef))
 
-      trimPrimerSequences(readMapping.out.combine(ch_bedFile))
+      lenFilter(readMapping.out)
+
+      trimPrimerSequences(lenFilter.out.combine(ch_bedFile))
 
       callVariants(trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) 
 
-      makeConsensus(trimPrimerSequences.out.ptrim)
+      makeConsensus(callVariants.out.sampleName, callVariants.out.ref, callVariants.out.amb_vcf_gz, callVariants.out.mask, callVariants.out.fixed_vcf_gz)
 
       makeQCCSV(trimPrimerSequences.out.ptrim.join(makeConsensus.out, by: 0)
                                    .combine(ch_preparedRef.map{ it[0] }))
@@ -123,7 +126,7 @@ workflow sequenceAnalysis {
 
     emit:
       qc_pass = collateSamples.out
-      variants = callVariants.out.variants
+      // variants = callVariants.out.variants
 }
 
 workflow ncovIllumina {
