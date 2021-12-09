@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 // enable dsl2
-nextflow.preview.dsl = 2
+nextflow.enable.dsl = 2
 
 // include modules
 include {printHelp} from './modules/help.nf'
@@ -17,62 +17,55 @@ if (params.help){
     exit 0
 }
 
-if (params.profile){
-    println("Profile should have a single dash: -profile")
-    System.exit(1)
+if (params.profile) {
+    error "ERROR: Profile should have a single dash: -profile"
 }
 
 if ( params.illumina ) {
    if ( !params.directory ) {
-       println("Please supply a directory containing fastqs or CRAMs with --directory. Specify --cram if supplying a CRAMs directory")
-       println("Use --help to print help")
-       System.exit(1)
+       error "ERROR: Please supply a directory containing fastqs or CRAMs with --directory. Specify --cram if supplying a CRAMs directory. Use --help to print help"
    }
    if ( (params.bed && ! params.ref) || (!params.bed && params.ref) ) {
-       println("--bed and --ref must be supplied together")
-       System.exit(1)
+       error "ERROR: --bed and --ref must be supplied together"
    }
 } else if ( params.nanopolish ) {
    if (! params.basecalled_fastq ) {
-       println("Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
+       error "ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected."
    }
    if (! params.fast5_pass ) {
-       println("Please supply a directory containing fast5 files with --fast5_pass (this is the fast5_pass directory)")
+       error "ERROR: Please supply a directory containing fast5 files with --fast5_pass (this is the fast5_pass directory)"
    }
    if (! params.sequencing_summary ) {
-       println("Please supply the path to the sequencing_summary.txt file from your run with --sequencing_summary")
-       System.exit(1)
+       error "ERROR: Please supply the path to the sequencing_summary.txt file from your run with --sequencing_summary"
    }
    if ( params.bed || params.ref ) {
-       println("ivarBed and alignerRefPrefix only work in illumina mode")
-       System.exit(1)
+       error "ERROR: ivarBed and alignerRefPrefix only work in illumina mode"
    }
 } else if ( params.medaka ) {
    if (! params.basecalled_fastq ) {
-       println("Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected.")
+       error "ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected."
+   }
+   if (!params.medaka_model) {
+       error "ERROR: No medaka model provided with --medaka_model"
    }
 } else {
-       println("Please select a workflow with --nanopolish, --illumina or --medaka, or use --help to print help")
-       System.exit(1)
+       error "ERROR: Please select a workflow with --nanopolish, --illumina or --medaka, or use --help to print help"
 }
 
 
 if ( ! params.prefix ) {
-     println("Please supply a prefix for your output files with --prefix")
-     println("Use --help to print help")
-     System.exit(1)
+     error "ERROR: Please supply a prefix for your output files with --prefix. Use --help to print help"
 } else {
      if ( params.prefix =~ /\// ){
-         println("The --prefix that you supplied contains a \"/\", please replace it with another character")
-         System.exit(1)
+         error "ERROR: The --prefix that you supplied contains a \"/\", please replace it with another character"
      }
-} 
-
+}
 
 
 // main workflow
 workflow {
-   if ( params.illumina ) {
+
+    if ( params.illumina ) {
        if (params.cram) {
            Channel.fromPath( "${params.directory}/**.cram" )
                   .map { file -> tuple(file.baseName, file) }
@@ -87,6 +80,7 @@ workflow {
        }
    }
    else {
+     
        // Check to see if we have barcodes
        nanoporeBarcodeDirs = file("${params.basecalled_fastq}/barcode*", type: 'dir', maxdepth: 1 )
        nanoporeNoBarcode = file("${params.basecalled_fastq}/*.fastq", type: 'file', maxdepth: 1)
@@ -109,14 +103,13 @@ workflow {
             Channel.fromPath( "${params.basecalled_fastq}", type: 'dir', maxDepth: 1 )
                     .set{ ch_fastqDirs }
       } else {
-            println("Couldn't detect whether your Nanopore run was barcoded or not. Use --basecalled_fastq to point to the unmodified guppy output directory.")
-            System.exit(1)
+            error "ERROR: Couldn't detect whether your Nanopore run was barcoded or not. Use --basecalled_fastq to point to the unmodified guppy output directory."
       }
    }
 
    main:
      if ( params.nanopolish || params.medaka ) {
-         articNcovNanopore(ch_fastqDirs)
+        articNcovNanopore(ch_fastqDirs)
      } else if ( params.illumina ) {
          if ( params.cram ) {
             ncovIlluminaCram(ch_cramFiles)
@@ -125,7 +118,7 @@ workflow {
             ncovIllumina(ch_filePairs)
          }
      } else {
-         println("Please select a workflow with --nanopolish, --illumina or --medaka")
+         error "ERROR: Please select a workflow with --nanopolish, --illumina or --medaka"
      }
      
 }

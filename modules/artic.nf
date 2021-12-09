@@ -8,14 +8,14 @@ process articDownloadScheme{
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "scheme", mode: "copy"
 
     output:
-    path "${params.schemeDir}/${params.scheme}/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
-    path "${params.schemeDir}/${params.scheme}/${params.schemeVersion}/*.primer.bed" , emit: bed
-    path "${params.schemeDir}" , emit: scheme
+    path "scheme/nCoV-2019/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
+    path "scheme/nCoV-2019/${params.schemeVersion}/*.scheme.bed" , emit: bed
+    path "scheme" , emit: scheme
 
     script:
     """
-    git clone ${params.schemeRepoURL} ${params.schemeDir}
-    """
+    git clone ${params.schemeRepoURL} scheme
+    """ 
 }
 
 process articGuppyPlex {
@@ -46,18 +46,18 @@ process articMinIONMedaka {
 
     label 'largecpu'
 
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}*", mode: "copy"
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.*", mode: "copy"
 
     input:
     tuple file(fastq), file(schemeRepo)
 
     output:
-    file("${sampleName}*")
+    file("${sampleName}.*")
     
-    tuple sampleName, file("${sampleName}.primertrimmed.rg.sorted.bam"), emit: ptrim
-    tuple sampleName, file("${sampleName}.sorted.bam"), emit: mapped
-    tuple sampleName, file("${sampleName}.consensus.fasta"), emit: consensus_fasta
-    tuple sampleName, file("${sampleName}.pass.vcf.gz"), emit: vcf
+    tuple val(sampleName), file("${sampleName}.primertrimmed.rg.sorted.bam"), emit: ptrim
+    tuple val(sampleName), file("${sampleName}.sorted.bam"), emit: mapped
+    tuple val(sampleName), file("${sampleName}.consensus.fasta"), emit: consensus_fasta
+    tuple val(sampleName), file("${sampleName}.pass.vcf.gz"), emit: vcf
 
     script:
     // Make an identifier from the fastq filename
@@ -82,10 +82,10 @@ process articMinIONMedaka {
     artic minion --medaka \
     ${minionFinalConfig} \
     --threads ${task.cpus} \
-    --scheme-directory ${schemeRepo} \
-    --read-file ${fastq} \
-    ${params.scheme}/${params.schemeVersion} \
-    ${sampleName}
+    --scheme-directory ${schemeRepo}/${params.schemeDir} \
+    --read-file ${fastq}\
+    --medaka-model ${params.medaka_model}\
+    nCoV-2019/${params.schemeVersion} ${sampleName}
     """
 }
 
@@ -94,18 +94,18 @@ process articMinIONNanopolish {
 
     label 'largecpu'
 
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}*", mode: "copy"
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.*", mode: "copy"
 
     input:
     tuple file(fastq), file(schemeRepo), file(fast5Pass), file(seqSummary)
 
     output:
-    file("${sampleName}*")
+    file("${sampleName}.*")
     
-    tuple sampleName, file("${sampleName}.primertrimmed.rg.sorted.bam"), emit: ptrim
-    tuple sampleName, file("${sampleName}.sorted.bam"), emit: mapped
-    tuple sampleName, file("${sampleName}.consensus.fasta"), emit: consensus_fasta
-    tuple sampleName, file("${sampleName}.pass.vcf.gz"), emit: vcf
+    tuple val(sampleName), file("${sampleName}.primertrimmed.rg.sorted.bam"), emit: ptrim
+    tuple val(sampleName), file("${sampleName}.sorted.bam"), emit: mapped
+    tuple val(sampleName), file("${sampleName}.consensus.fasta"), emit: consensus_fasta
+    tuple val(sampleName), file("${sampleName}.pass.vcf.gz"), emit: vcf
 
     script:
     // Make an identifier from the fastq filename
@@ -129,11 +129,11 @@ process articMinIONNanopolish {
     """
     artic minion ${minionFinalConfig} \
     --threads ${task.cpus} \
-    --scheme-directory ${schemeRepo} \
+    --scheme-directory ${schemeRepo}/${params.schemeDir} \
     --read-file ${fastq} \
     --fast5-directory ${fast5Pass} \
     --sequencing-summary ${seqSummary} \
-    ${params.scheme}/${params.schemeVersion} \
+    nCoV-2019/${params.schemeVersion} \
     ${sampleName}
     """
 }
@@ -144,10 +144,10 @@ process articRemoveUnmappedReads {
     cpus 1
 
     input:
-    tuple(sampleName, path(bamfile))
+    tuple val(sampleName), path(bamfile)
 
     output:
-    tuple( sampleName, file("${sampleName}.mapped.sorted.bam"))
+    tuple val(sampleName), file("${sampleName}.mapped.sorted.bam")
 
     script:
     """
