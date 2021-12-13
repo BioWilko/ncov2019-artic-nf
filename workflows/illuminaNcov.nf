@@ -5,10 +5,9 @@ nextflow.enable.dsl = 2
 
 // import modules
 include {articDownloadScheme } from '../modules/artic.nf' 
-include {readTrimming} from '../modules/illumina.nf' 
 include {indexReference} from '../modules/illumina.nf'
 include {readMapping} from '../modules/illumina.nf' 
-include {trimPrimerSequences} from '../modules/illumina.nf' 
+include {align_trim} from '../modules/illumina.nf' 
 include {callVariants} from '../modules/illumina.nf'
 include {makeConsensus} from '../modules/illumina.nf' 
 include {cramToFastq} from '../modules/illumina.nf'
@@ -88,19 +87,18 @@ workflow sequenceAnalysis {
       ch_bedFile
 
     main:
-      readTrimming(ch_filePairs)
 
-      readMapping(readTrimming.out.combine(ch_preparedRef))
+      readMapping(ch_filePairs.combine(ch_preparedRef))
 
       lenFilter(readMapping.out)
 
-      trimPrimerSequences(lenFilter.out.combine(ch_bedFile))
+      align_trim(lenFilter.out.combine(ch_bedFile))
 
-      callVariants(trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) 
+      callVariants(align_trim.out.ptrim.combine(ch_preparedRef.map{ it[0] })) 
 
       makeConsensus(callVariants.out.sampleName, callVariants.out.ref, callVariants.out.amb_vcf_gz, callVariants.out.mask, callVariants.out.fixed_vcf_gz)
 
-      makeQCCSV(trimPrimerSequences.out.ptrim.join(makeConsensus.out, by: 0)
+      makeQCCSV(align_trim.out.ptrim.join(makeConsensus.out, by: 0)
                                    .combine(ch_preparedRef.map{ it[0] }))
 
       makeQCCSV.out.csv.splitCsv()
@@ -116,11 +114,11 @@ workflow sequenceAnalysis {
 
       collateSamples(qc.pass.map{ it[0] }
                            .join(makeConsensus.out, by: 0)
-                           .join(trimPrimerSequences.out.mapped))     
+                           .join(align_trim.out.mapped))     
 
       if (params.outCram) {
-        bamToCram(trimPrimerSequences.out.mapped.map{it[0] } 
-                        .join (trimPrimerSequences.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
+        bamToCram(align_trim.out.mapped.map{it[0] } 
+                        .join (align_trim.out.ptrim.combine(ch_preparedRef.map{ it[0] })) )
 
       }
 
@@ -138,7 +136,7 @@ workflow ncovIllumina {
       prepareReferenceFiles()
       
       // Actually do analysis
-      sequenceAnalysis(ch_filePairs, prepareReferenceFiles.out.bwaindex, prepareReferenceFiles.out.bedfile)
+      sequenceAnalysis(ch_filePairs, prepareReferenceFiles.out.mmindex, prepareReferenceFiles.out.bedfile)
 
       // Do some typing if we have the correct files
       if ( params.gff ) {
