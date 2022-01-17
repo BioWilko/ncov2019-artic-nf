@@ -1,35 +1,6 @@
-// process readTrimming {
-//     /**
-//     * Trims paired fastq using trim_galore (https://github.com/FelixKrueger/TrimGalore)
-//     * @input tuple(sampleName, path(forward), path(reverse))
-//     * @output trimgalore_out tuple(sampleName, path("*_val_1.fq.gz"), path("*_val_2.fq.gz"))
-//     */
-
-//     tag { sampleName }
-
-//     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: '*_val_{1,2}.fq.gz', mode: 'copy'
-
-//     cpus 2
-
-//     input:
-//     tuple val(sampleName), path(forward), path(reverse)
-
-//     output:
-//     tuple val(sampleName), path("*_val_1.fq.gz"), path("*_val_2.fq.gz") optional true
-
-//     script:
-//     """
-//     if [[ \$(gunzip -c ${forward} | head -n4 | wc -l) -eq 0 ]]; then
-//       exit 0
-//     else
-//       trim_galore --paired $forward $reverse
-//     fi
-//     """
-// }
-
 process indexReference {
     /**
-    * Indexes reference fasta file in the scheme repo using bwa.
+    * Indexes reference fasta file in the scheme repo using minimap2.
     */
 
     tag { ref }
@@ -45,6 +16,36 @@ process indexReference {
         ln -s ${ref} ref.fa
         minimap2 -x sr -d ref.mmi ref.fa
         """
+}
+
+process readTrimming {
+        /**
+    * Trims paired fastq using ngs-bits SeqPurge (https://github.com/imgag/ngs-bits)
+    * @input tuple(sampleName, path(forward), path(reverse))
+    * @output trimgalore_out tuple(sampleName, path("*_val_1.fq.gz"), path("*_val_2.fq.gz"))
+    */
+
+    tag { sampleName }
+
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: '*_val_{1,2}.fq.gz', mode: 'copy'
+
+    cpus 2
+
+    input:
+    tuple val(sampleName), path(forward), path(reverse)
+
+    output:
+    tuple val(sampleName), path("*_val_1.fq.gz"), path("*_val_2.fq.gz") optional true
+
+
+    script:
+    """
+    if [[ \$(gunzip -c ${forward} | head -n4 | wc -l) -eq 0 ]]; then
+      exit 0
+    else
+      trim_galore --paired ${forward} ${reverse}
+    fi  
+    """
 }
 
 process readMapping {
@@ -69,7 +70,7 @@ process readMapping {
 
     script:
         """
-        minimap2 -ax sr ${ref} ${forward} ${reverse} | \
+        minimap2 -x sr -a ref.mmi ${forward} ${reverse} | \
             samtools view -S -b | \
             samtools sort -o ${sampleName}.sorted.bam
         """
@@ -81,7 +82,7 @@ process lenFilter {
 
     label 'largecpu'
 
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.lenfiltered.bam", mode: 'copy'
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.lenfiltered.bam", mode: 'copy'
 
     input:
         tuple val(sampleName), path("${sampleName}.sorted.bam")
@@ -100,9 +101,10 @@ process lenFilter {
 process align_trim {
     tag { sampleName }
 
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.lenfiltered.bam", mode: 'copy'
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam", mode: 'copy'
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.lenfiltered.trimmed.sorted.bam", mode: 'copy'
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.align_trim_report.txt", mode: 'copy'
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}_report.tsv", mode: 'copy'
 
     input:
     tuple val(sampleName), path(bam), path(bedfile)
@@ -110,78 +112,14 @@ process align_trim {
     output:
     tuple val(sampleName), path("${sampleName}.mapped.lenfiltered.bam"), emit: mapped
     tuple val(sampleName), path("${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam" ), emit: ptrim
+    path("${sampleName}.mapped.lenfiltered.trimmed.sorted.bam")
+    path("${sampleName}.align_trim_report.txt")
 
     """
-    align_trim_illumina.py ${bedfile} --start --remove-incorrect-pairs --no-read-groups < ${bam} 2> ${sampleName}.align_trim_report.txt | samtools sort - -o ${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam
+    align_trim_illumina.py ${bedfile} --remove-incorrect-pairs --no-read-groups < ${bam} 2> ${sampleName}.align_trim_report.txt | samtools sort - -o ${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam
+    align_trim_illumina.py ${bedfile} --start --remove-incorrect-pairs --no-read-groups --report ${sampleName}_report.tsv < ${bam} 2> ${sampleName}.align_trim_report.txt | samtools sort - -o ${sampleName}.mapped.lenfiltered.trimmed.sorted.bam
     """
 }
-
-
-// process trimPrimerSequences {
-
-//     tag { sampleName }
-
-//     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.bam", mode: 'copy'
-//     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.primertrimmed.sorted.bam", mode: 'copy'
-
-//     input:
-//     tuple val(sampleName), path(bam), path(bedfile)
-
-//     output:
-//     tuple val(sampleName), path("${sampleName}.mapped.bam"), emit: mapped
-//     tuple val(sampleName), path("${sampleName}.mapped.primertrimmed.sorted.bam" ), emit: ptrim
-
-//     script:
-//     if (params.allowNoprimer){
-//         ivarCmd = "ivar trim -e"
-//     } else {
-//         ivarCmd = "ivar trim"
-//     }
-   
-//     if ( params.cleanBamHeader )
-//         """
-//         samtools reheader --no-PG  -c 'sed "s/${sampleName}/sample/g"' ${bam} | \
-//         samtools view -F4 -o sample.mapped.bam
-
-//         mv sample.mapped.bam ${sampleName}.mapped.bam
-        
-//         samtools index ${sampleName}.mapped.bam
-
-//         ${ivarCmd} -i ${sampleName}.mapped.bam -b ${bedfile} -m ${params.illuminaKeepLen} -q ${params.illuminaQualThreshold} -p ivar.out
-
-//         samtools reheader --no-PG  -c 'sed "s/${sampleName}/sample/g"' ivar.out.bam | \
-//         samtools sort -o sample.mapped.primertrimmed.sorted.bam
-
-//         mv sample.mapped.primertrimmed.sorted.bam ${sampleName}.mapped.primertrimmed.sorted.bam
-//         """
-
-//     else
-//         """
-//         samtools view -F4 -o ${sampleName}.mapped.bam ${bam}
-//         samtools index ${sampleName}.mapped.bam
-//         ${ivarCmd} -i ${sampleName}.mapped.bam -b ${bedfile} -m ${params.illuminaKeepLen} -q ${params.illuminaQualThreshold} -p ivar.out
-//         samtools sort -o ${sampleName}.mapped.primertrimmed.sorted.bam ivar.out.bam
-//         """
-// }
-
-// process callVariants {
-
-//     tag { sampleName }
-
-//     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.variants.tsv", mode: 'copy'
-
-//     input:
-//     tuple val(sampleName), path(bam), path(ref)
-
-//     output:
-//     tuple val(sampleName), path("${sampleName}.variants.tsv"), emit: variants
-
-//     script:
-//         """
-//         samtools mpileup -A -d 0 --reference ${ref} -B -Q 0 ${bam} |\
-//         ivar variants -r ${ref} -m ${params.ivarMinDepth} -p ${sampleName}.variants -q ${params.ivarMinVariantQuality} -t ${params.ivarMinFreqThreshold}
-//         """
-// }
 
 process callVariants {
 
@@ -206,7 +144,7 @@ process callVariants {
                   -F 0.2 \
                   -C 1 \
                   --pooled-continuous \
-                  --min-coverage ${params.MinDepth} \
+                  --min-coverage ${params.MinDepth}\
                   --gvcf --gvcf-dont-use-chunk true ${bam} > ${sampleName}.gvcf
 
         # make depth mask, split variants into ambiguous/consensus
@@ -263,7 +201,7 @@ process cramToFastq {
     * Converts CRAM to fastq (http://bio-bwa.sourceforge.net/)
     * Uses samtools to convert to CRAM, to FastQ (http://www.htslib.org/doc/samtools.html)
     * @input
-    * @output
+    * @output   
     */
 
     input:

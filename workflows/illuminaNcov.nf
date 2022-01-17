@@ -6,6 +6,7 @@ nextflow.enable.dsl = 2
 // import modules
 include {articDownloadScheme } from '../modules/artic.nf' 
 include {indexReference} from '../modules/illumina.nf'
+include {readTrimming} from '../modules/illumina.nf' 
 include {readMapping} from '../modules/illumina.nf' 
 include {align_trim} from '../modules/illumina.nf' 
 include {callVariants} from '../modules/illumina.nf'
@@ -88,7 +89,9 @@ workflow sequenceAnalysis {
 
     main:
 
-      readMapping(ch_filePairs.combine(ch_preparedRef))
+      readTrimming(ch_filePairs)
+
+      readMapping(readTrimming.out.combine(ch_preparedRef))
 
       lenFilter(readMapping.out)
 

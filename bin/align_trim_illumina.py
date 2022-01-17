@@ -171,25 +171,28 @@ def find_primer(bed, pos, direction):
     """
     from operator import itemgetter
 
-    if direction == "+":
-        closest = min(
-            [
-                (abs(p["start"] - pos), p["start"] - pos, p)
-                for p in bed
-                if p["direction"] == direction
-            ],
-            key=itemgetter(0),
-        )
-    else:
-        closest = min(
-            [
-                (abs(p["end"] - pos), p["end"] - pos, p)
-                for p in bed
-                if p["direction"] == direction
-            ],
-            key=itemgetter(0),
-        )
-    return closest
+    try:
+        if direction == "+":
+            closest = min(
+                [
+                    (abs(p["start"] - pos), p["start"] - pos, p)
+                    for p in bed
+                    if p["direction"] == direction and abs(p["start"]) <= pos
+                ],
+                key=itemgetter(0),
+            )
+        else:
+            closest = min(
+                [
+                    (abs(p["end"] - pos), p["end"] - pos, p)
+                    for p in bed
+                    if p["direction"] == direction and abs(p["end"]) >= pos
+                ],
+                key=itemgetter(0),
+            )
+        return closest
+    except:
+        return None
 
 
 def trim(segment, primer_pos, end, debug):
@@ -331,7 +334,7 @@ def go(args):
     if args.report:
         reportfh = open(args.report, "w")
         print(
-            "QueryName\tReferenceStart\tReferenceEnd\tPrimerPair\tPrimer1\tPrimer1Start\tPrimer2\tPrimer2Start\tIsSecondary\tIsSupplementary\tStart\tEnd\tCorrectlyPaired",
+            "QueryName\tReadDirection\tReferenceStart\tReferenceEnd\tPrimerPair\tPrimer1\tPrimer1Start\tPrimer2\tPrimer2Start\tIsSecondary\tIsSupplementary\tStart\tEnd\tCorrectlyPaired",
             file=reportfh,
         )
 
@@ -372,16 +375,19 @@ def go(args):
             continue
 
         # locate the nearest primers to this alignment segment
+        if not segment1.is_reverse:
+            p1 = find_primer(bed, segment1.reference_start, "+")
+            p2 = find_primer(bed, segment2.reference_end, "-")
+        else:
+            p1 = find_primer(bed, segment2.reference_start, "+")
+            p2 = find_primer(bed, segment1.reference_end, "-")
 
-        p1 = find_primer(bed, segment1.reference_start, "+")
-        p2 = find_primer(bed, segment2.reference_end, "-")
-
-        p3 = find_primer(bed, segment2.reference_start, "+")
-        p4 = find_primer(bed, segment1.reference_end, "-")
-
-        if (abs(p3[1]) + abs(p4[1])) < (abs(p1[1]) + abs(p2[1])):
-            p1 = p3
-            p2 = p4
+        if p1 == None or p2 == None:
+            print(
+                "%s skipped as no valid primer for read pair" % (segment1.query_name),
+                file=sys.stderr,
+            )
+            continue
 
         # check if primers are correctly paired and then assign read group
         # NOTE: removed this as a function as only called once
@@ -397,17 +403,13 @@ def go(args):
             else:
                 segment1.set_tag("RG", "unmatched")
                 segment2.set_tag("RG", "unmatched")
-        if args.remove_incorrect_pairs and not correctly_paired:
-            print(
-                "%s skipped as not correctly paired" % (segment1.query_name),
-                file=sys.stderr,
-            )
-            continue
 
         # update the report with this alignment segment + primer details
         for segment in [segment1, segment2]:
-            report = "%s\t%s\t%s\t%s_%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d" % (
+            direction = "read_1" if segment.is_read1 else "read_2"
+            report = "%s\t%s\t%s\t%s\t%s_%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d" % (
                 segment.query_name,
+                direction,
                 segment.reference_start,
                 segment.reference_end,
                 p1[2]["Primer_ID"],
@@ -420,11 +422,19 @@ def go(args):
                 segment.is_supplementary,
                 p1[2]["start"],
                 p2[2]["end"],
+                correctly_paired,
             )
             if args.report:
                 print(report, file=reportfh)
             if args.verbose:
                 print(report, file=sys.stderr)
+
+        if args.remove_incorrect_pairs and not correctly_paired:
+            print(
+                "%s skipped as not correctly paired" % (segment1.query_name),
+                file=sys.stderr,
+            )
+            continue
 
         # get the primer positions
         if args.start:
@@ -434,71 +444,56 @@ def go(args):
             p1_position = p1[2]["end"]
             p2_position = p2[2]["start"]
 
-        # softmask the alignment if left primer start/end inside alignment
-        if segment1.reference_start < p1_position:
-            try:
-                trim(segment1, p1_position, False, args.verbose)
-                if args.verbose:
+        for segment in [segment1, segment2]:
+            # softmask the alignment if left primer start/end inside alignment
+            if segment.reference_start < p1_position:
+                try:
+                    trim(segment, p1_position, False, args.verbose)
+                    if args.verbose:
+                        print(
+                            "ref start %s >= primer_position %s"
+                            % (segment.reference_start, p1_position),
+                            file=sys.stderr,
+                        )
+                except Exception as e:
                     print(
-                        "ref start %s >= primer_position %s"
-                        % (segment1.reference_start, p1_position),
+                        "problem soft masking left primer in {} (error: {}), skipping".format(
+                            segment.query_name, e
+                        ),
                         file=sys.stderr,
                     )
-            except Exception as e:
+                    continue
+
+            # softmask the alignment if right primer start/end inside alignment
+            if segment.reference_end > p2_position:
+                try:
+                    trim(segment, p2_position, True, args.verbose)
+                    if args.verbose:
+                        print(
+                            "ref start %s >= primer_position %s"
+                            % (segment.reference_start, p2_position),
+                            file=sys.stderr,
+                        )
+                except Exception as e:
+                    print(
+                        "problem soft masking right primer in {} (error: {}), skipping".format(
+                            segment1.query_name, e
+                        ),
+                        file=sys.stderr,
+                    )
+                    continue
+
+            # check the the alignment still contains bases matching the reference
+            if "M" not in segment.cigarstring:
                 print(
-                    "problem soft masking left primer in {} (error: {}), skipping".format(
-                        segment1.query_name, e
-                    ),
+                    "%s dropped as does not match reference post masking"
+                    % (segment.query_name),
                     file=sys.stderr,
                 )
                 continue
 
-        # softmask the alignment if right primer start/end inside alignment
-        if segment2.reference_end > p2_position:
-            try:
-                trim(segment2, p2_position, True, args.verbose)
-                if args.verbose:
-                    print(
-                        "ref start %s >= primer_position %s"
-                        % (segment1.reference_start, p2_position),
-                        file=sys.stderr,
-                    )
-            except Exception as e:
-                print(
-                    "problem soft masking right primer in {} (error: {}), skipping".format(
-                        segment1.query_name, e
-                    ),
-                    file=sys.stderr,
-                )
-                continue
-
-        # normalise if requested
-        # if args.normalise:
-        #     pair = "%s-%s-%d" % (
-        #         p1[2]["Primer_ID"],
-        #         p2[2]["Primer_ID"],
-        #         segment.is_reverse,
-        #     )
-        #     counter[pair] += 1
-        #     if counter[pair] > args.normalise:
-        #         print(
-        #             "%s dropped as abundance theshold reached" % (segment.query_name),
-        #             file=sys.stderr,
-        #         )
-        #         continue
-
-        # check the the alignment still contains bases matching the reference
-        if "M" not in segment1.cigarstring or "M" not in segment2.cigarstring:
-            print(
-                "%s dropped as does not match reference post masking"
-                % (segment1.query_name),
-                file=sys.stderr,
-            )
-            continue
-
-        # current alignment segment has passed filters, send it to the outfile
-        outfile.write(segment1)
-        outfile.write(segment2)
+            # current alignment segment has passed filters, send it to the outfile
+            outfile.write(segment)
 
     # close up the file handles
     infile.close()
