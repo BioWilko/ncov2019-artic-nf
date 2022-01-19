@@ -509,9 +509,6 @@ def main():
         description="Trim alignments from an amplicon scheme."
     )
     parser.add_argument("bedfile", help="BED file containing the amplicon scheme")
-    parser.add_argument(
-        "--normalise", type=int, help="Subsample to n coverage per strand"
-    )
     parser.add_argument("--report", type=str, help="Output report to file")
     parser.add_argument(
         "--start", action="store_true", help="Trim to start of primers instead of ends"
@@ -524,7 +521,6 @@ def main():
     )
     parser.add_argument("--verbose", action="store_true", help="Debug mode")
     parser.add_argument("--remove-incorrect-pairs", action="store_true")
-    parser.add_argument("--fragmented", action="store_true")
     args = parser.parse_args()
     go(args)
 

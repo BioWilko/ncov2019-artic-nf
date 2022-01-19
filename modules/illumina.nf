@@ -21,8 +21,6 @@ process indexReference {
 process readTrimming {
     /**
     * Trims paired fastq using trim_galore (https://github.com/FelixKrueger/TrimGalore)
-    * @input tuple(sampleName, path(forward), path(reverse))
-    * @output trimgalore_out tuple(sampleName, path("*_val_1.fq.gz"), path("*_val_2.fq.gz"))
     */
 
     tag { sampleName }
@@ -50,11 +48,11 @@ process readMapping {
     /**
     * Maps trimmed paired fastq using minimap2 (https://github.com/lh3/minimap2)
     * Uses samtools to convert to BAM, sort and index sorted BAM (http://www.htslib.org/doc/samtools.html)
-    * @input 
-    * @output 
     */
 
     tag { sampleName }
+
+    label 'largecpu'
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.sorted.bam", mode: 'copy'
 
@@ -66,13 +64,17 @@ process readMapping {
 
     script:
         """
-        minimap2 -x sr -a ref.mmi ${forward} ${reverse} | \
+        minimap2 -x sr -t ${task.cpus} -a ref.mmi ${forward} ${reverse} | \
             samtools view -S -b | \
             samtools sort -o ${sampleName}.sorted.bam
         """
 }
 
 process lenFilter {
+    /**
+    * Drops reads which do not fit within the read length window (definable in illumina.conf)
+    * Uses samtools to convert BAM to SAM, awk to filter the SAM, then samtools to convert SAM to BAM again (http://www.htslib.org/doc/samtools.html)
+    */    
 
     tag { sampleName }
 
@@ -93,12 +95,16 @@ process lenFilter {
 }
 
 process align_trim {
+    /**
+    * Ensures all read pairs are properly paired, assigns each read pair to an amplicon based on the scheme bedfile,
+    * ensures that read pairs do not cross amplicon boundaries, softclips primers from the reads for ${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam,
+    * then checks that the read pairs still contain useful sequence via their cigar strings.
+    */ 
+
     tag { sampleName }
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam", mode: 'copy'
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.lenfiltered.trimmed.sorted.bam", mode: 'copy'
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.align_trim_report.txt", mode: 'copy'
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}_report.tsv", mode: 'copy'
 
     input:
     tuple val(sampleName), path(bam), path(bedfile)
@@ -107,7 +113,6 @@ process align_trim {
     tuple val(sampleName), path("${sampleName}.mapped.lenfiltered.bam"), emit: mapped
     tuple val(sampleName), path("${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam" ), emit: ptrim
     path("${sampleName}.mapped.lenfiltered.trimmed.sorted.bam")
-    path("${sampleName}.align_trim_report.txt")
 
     """
     align_trim_illumina.py ${bedfile} --start --remove-incorrect-pairs --no-read-groups < ${bam} 2> ${sampleName}.align_trim_report.txt | samtools sort - -o ${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam
@@ -116,6 +121,9 @@ process align_trim {
 }
 
 process callVariants {
+    /**
+    * 
+    */ 
 
     tag { sampleName }
 
@@ -166,6 +174,9 @@ process callVariants {
 }
 
 process makeConsensus {
+    /**
+    * 
+    */ 
 
     tag { sampleName }
 
@@ -194,8 +205,6 @@ process cramToFastq {
     /**
     * Converts CRAM to fastq (http://bio-bwa.sourceforge.net/)
     * Uses samtools to convert to CRAM, to FastQ (http://www.htslib.org/doc/samtools.html)
-    * @input
-    * @output   
     */
 
     input:
