@@ -8,8 +8,8 @@ process articDownloadScheme{
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "scheme", mode: "copy"
 
     output:
-    path "scheme/${params.schemeDir}/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
-    path "scheme/${params.schemeDir}/${params.schemeVersion}/*.scheme.bed" , emit: bed
+    path "${params.schemeDir}/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
+    path "${params.schemeDir}/${params.schemeVersion}/*.scheme.bed" , emit: bed
     path "scheme" , emit: scheme
 
     script:
@@ -20,8 +20,6 @@ process articDownloadScheme{
 
 process articGuppyPlex {
     tag { params.prefix + "-" + fastqDir }
-
-    label 'largemem'
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${params.prefix}*.fastq", mode: "copy"
 
@@ -85,7 +83,7 @@ process articMinIONMedaka {
     --scheme-directory ${schemeRepo}/${params.schemeDir} \
     --read-file ${fastq}\
     --medaka-model ${params.medaka_model}\
-    nCoV-2019/${params.schemeVersion} ${sampleName}
+    ${schemeDir}/${params.schemeVersion} ${sampleName}
     """
 }
 
@@ -133,15 +131,13 @@ process articMinIONNanopolish {
     --read-file ${fastq} \
     --fast5-directory ${fast5Pass} \
     --sequencing-summary ${seqSummary} \
-    nCoV-2019/${params.schemeVersion} \
+    ${params.schemeDir}/${params.schemeVersion} \
     ${sampleName}
     """
 }
 
 process articRemoveUnmappedReads {
     tag { sampleName }
-
-    cpus 1
 
     input:
     tuple val(sampleName), path(bamfile)

@@ -32,7 +32,7 @@ You can avoid just the cloning of the scheme repository to remain on a fixed rev
 An up-to-date version of Nextflow is required because the pipeline is written in DSL2 and makes use of Mamba compatibility. Following the instructions at https://www.nextflow.io/ to download and install Nextflow should get you a recent-enough version. 
 
 #### Containers
-This repo contains both [Singularity]("https://sylabs.io/guides/3.0/user-guide/index.html") and Dockerfiles. You can build the Singularity containers locally by running `scripts/build_singularity_containers.sh` and use them with `-profile singularity` The containers will be available from Docker/Singularityhub shortly.
+This repo contains both [Singularity]("https://sylabs.io/guides/3.0/user-guide/index.html") and Dockerfiles. You can build the Singularity containers locally by running `scripts/build_singularity_containers.sh` and use them with `-profile singularity`.
 
 #### Conda
 The repo contains a environment.yml files which automatically build the correct conda env if `-profile mamba` or `-profile conda` is specifed in the command. Although you'll need `conda` or `mamba` installed, this is probably the easiest way to run this pipeline.

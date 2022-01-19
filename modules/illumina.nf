@@ -29,8 +29,6 @@ process readTrimming {
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: '*_val_{1,2}.fq.gz', mode: 'copy'
 
-    cpus 2
-
     input:
     tuple val(sampleName), path(forward), path(reverse)
 
@@ -58,8 +56,6 @@ process readMapping {
 
     tag { sampleName }
 
-    label 'largecpu'
-
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.sorted.bam", mode: 'copy'
 
     input:
@@ -79,8 +75,6 @@ process readMapping {
 process lenFilter {
 
     tag { sampleName }
-
-    label 'largecpu'
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.mapped.lenfiltered.bam", mode: 'copy'
 
