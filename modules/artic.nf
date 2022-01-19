@@ -8,8 +8,8 @@ process articDownloadScheme{
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "scheme", mode: "copy"
 
     output:
-    path "scheme/nCoV-2019/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
-    path "scheme/nCoV-2019/${params.schemeVersion}/*.scheme.bed" , emit: bed
+    path "scheme/${params.schemeDir}/${params.schemeVersion}/*.reference.fasta" , emit: reffasta
+    path "scheme/${params.schemeDir}/${params.schemeVersion}/*.scheme.bed" , emit: bed
     path "scheme" , emit: scheme
 
     script:

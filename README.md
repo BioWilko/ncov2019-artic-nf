@@ -1,5 +1,5 @@
 # ncov2019-artic-nf
-A Nextflow pipeline for bioinformatic processing of SARS-CoV-2 using the ARTIC network's fieldbioinformatics tools (https://github.com/artic-network/fieldbioinformatics) for ONT data and a separate workflow for Illumina data, including the improved consensus generation workflow designed by @jts, and `align_trim` from the ARTIC fieldbioinformatics pipeline written by @nickloman and @will-rowe adapted for use with Illumina data by @BioWilko. The pipeline was originally designed and written by @m-bull however it is now maintained by @BioWilko.
+A Nextflow pipeline for bioinformatic processing of SARS-CoV-2 using the ARTIC network's fieldbioinformatics tools (https://github.com/artic-network/fieldbioinformatics) for ONT data and a separate workflow for Illumina data, including the improved consensus generation workflow designed by Jared Simpson, and `align_trim` from the ARTIC fieldbioinformatics pipeline written by Nick Loman and Will Rowe, adapted for use with Illumina data by Sam Wilkinson. The pipeline was originally designed and written by Matt Bull however it is now maintained by @BioWilko.
 
 
 #### Introduction
