@@ -438,11 +438,11 @@ def go(args):
 
         # get the primer positions
         if args.start:
-            p1_position = p1[2]["start"]
-            p2_position = p2[2]["end"]
-        else:
             p1_position = p1[2]["end"]
             p2_position = p2[2]["start"]
+        else:
+            p1_position = p1[2]["start"]
+            p2_position = p2[2]["end"]
 
         for segment in [segment1, segment2]:
             # softmask the alignment if left primer start/end inside alignment

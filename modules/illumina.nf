@@ -19,8 +19,8 @@ process indexReference {
 }
 
 process readTrimming {
-        /**
-    * Trims paired fastq using ngs-bits SeqPurge (https://github.com/imgag/ngs-bits)
+    /**
+    * Trims paired fastq using trim_galore (https://github.com/FelixKrueger/TrimGalore)
     * @input tuple(sampleName, path(forward), path(reverse))
     * @output trimgalore_out tuple(sampleName, path("*_val_1.fq.gz"), path("*_val_2.fq.gz"))
     */
@@ -116,8 +116,8 @@ process align_trim {
     path("${sampleName}.align_trim_report.txt")
 
     """
-    align_trim_illumina.py ${bedfile} --remove-incorrect-pairs --no-read-groups < ${bam} 2> ${sampleName}.align_trim_report.txt | samtools sort - -o ${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam
-    align_trim_illumina.py ${bedfile} --start --remove-incorrect-pairs --no-read-groups --report ${sampleName}_report.tsv < ${bam} 2> ${sampleName}.align_trim_report.txt | samtools sort - -o ${sampleName}.mapped.lenfiltered.trimmed.sorted.bam
+    align_trim_illumina.py ${bedfile} --start --remove-incorrect-pairs --no-read-groups < ${bam} 2> ${sampleName}.align_trim_report.txt | samtools sort - -o ${sampleName}.mapped.lenfiltered.primertrimmed.sorted.bam
+    align_trim_illumina.py ${bedfile} --remove-incorrect-pairs --no-read-groups < ${bam} 2> ${sampleName}.align_trim_report.txt | samtools sort - -o ${sampleName}.mapped.lenfiltered.trimmed.sorted.bam
     """
 }
 

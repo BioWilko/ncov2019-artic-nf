@@ -25,9 +25,6 @@ if ( params.illumina ) {
    if ( !params.directory ) {
        error "ERROR: Please supply a directory containing fastqs or CRAMs with --directory. Specify --cram if supplying a CRAMs directory. Use --help to print help"
    }
-   if ( (params.bed && ! params.ref) || (!params.bed && params.ref) ) {
-       error "ERROR: --bed and --ref must be supplied together"
-   }
 } else if ( params.nanopolish ) {
    if (! params.basecalled_fastq ) {
        error "ERROR: Please supply a directory containing basecalled fastqs with --basecalled_fastq. This is the output directory from guppy_barcoder or guppy_basecaller - usually fastq_pass. This can optionally contain barcodeXX directories, which are auto-detected."
@@ -37,9 +34,6 @@ if ( params.illumina ) {
    }
    if (! params.sequencing_summary ) {
        error "ERROR: Please supply the path to the sequencing_summary.txt file from your run with --sequencing_summary"
-   }
-   if ( params.bed || params.ref ) {
-       error "ERROR: ivarBed and alignerRefPrefix only work in illumina mode"
    }
 } else if ( params.medaka ) {
    if (! params.basecalled_fastq ) {
@@ -122,4 +116,3 @@ workflow {
      }
      
 }
-
