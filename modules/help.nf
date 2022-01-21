@@ -60,7 +60,7 @@ def printHelp() {
       --schemeVersion         ARTIC scheme version (Default: 'V4')
       --schemeRepoURL         Repo to download your primer scheme from (Default: 'https://github.com/artic-network/primer-schemes.git')
                               If a local clone of a scheme repo is preferred it should be set with file:///path/to/own/clone/of/github.com/artic-network/primer-schemes/
-      --schemeDir             Directory within schemeRepoURL that contains primer schemes (Default: 'primer_schemes')
+      --schemeDir             Directory within schemeRepoURL that contains primer schemes (Default: 'nCoV-2019')
 
       --gff                   Path to annotation gff for variant consequence calling and typing. (Default: unset, typing not run unless set)
       --yaml                  Path to YAML file with typing schemes. 

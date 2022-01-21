@@ -83,7 +83,7 @@ process articMinIONMedaka {
     --scheme-directory ${schemeRepo}/${params.schemeDir} \
     --read-file ${fastq}\
     --medaka-model ${params.medaka_model}\
-    ${schemeDir}/${params.schemeVersion} ${sampleName}
+    ${params.schemeDir}/${params.schemeVersion} ${sampleName}
     """
 }
 
