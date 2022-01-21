@@ -180,7 +180,7 @@ process makeConsensus {
 
     tag { sampleName }
 
-    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.primertrimmed.consensus.fa", mode: 'copy'
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.primertrimmed.consensus.fasta", mode: 'copy'
 
     input:
         val(sampleName)
@@ -190,14 +190,14 @@ process makeConsensus {
         path(fixed_vcf_gz)
 
     output:
-        tuple val(sampleName), path("${sampleName}.primertrimmed.consensus.fa")
+        tuple val(sampleName), path("${sampleName}.primertrimmed.consensus.fasta")
 
     script:
         """
         # apply ambiguous variants first using IUPAC codes. this variant set cannot contain indels or the subsequent step will break
         bcftools consensus -f ${ref} -I ${sampleName}.ambiguous.norm.vcf.gz > ${sampleName}.ambiguous.fasta
         # apply remaning variants, including indels
-        bcftools consensus -f ${sampleName}.ambiguous.fasta -m ${mask} ${sampleName}.fixed.norm.vcf.gz | sed s/MN908947.3/${sampleName}/ > ${sampleName}.primertrimmed.consensus.fa
+        bcftools consensus -f ${sampleName}.ambiguous.fasta -m ${mask} ${sampleName}.fixed.norm.vcf.gz | sed s/MN908947.3/${sampleName}/ > ${sampleName}.primertrimmed.consensus.fasta
         """
 }
 
