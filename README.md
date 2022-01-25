@@ -19,7 +19,7 @@ As the conda environments involved in this pipeline have become more complicated
 You can also use cram file input by passing the --cram flag.
 You can also specify cram file output by passing the --outCram flag.
 
-You can avoid just the cloning of the scheme repository to remain on a fixed revision of it over time by passing --schemeRepoURL `file:///path/to/own/clone/of/github.com/artic-network/primer-schemes`. This removes any internet access from the workflow except for the optional upload steps.
+You can avoid just the cloning of the scheme repository to remain on a fixed revision of it over time by passing --schemeRepoURL `file:///path/to/own/clone/of/github.com/artic-network/primer-schemes`.
 
 ### Nanopore
 #### Nanopolish
