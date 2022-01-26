@@ -49,7 +49,6 @@ process articGuppyPlex {
     }
     """
     ${guppyplex_command} \
-    --skip-quality-check \
     --min-length ${params.min_length} \
     --max-length ${params.max_length} \
     --prefix ${params.prefix} \
