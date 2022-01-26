@@ -20,7 +20,7 @@ process articDownloadScheme{
         """
         mkdir -p scheme/${params.schemeDir}/${params.schemeVersion}/
         cp ${bed} scheme/${params.schemeDir}/${params.schemeVersion}/${params.schemeDir}.scheme.bed
-        cp ${reffasta} scheme/${params.schemeDir}/${params.schemeVersion}/${params.schemeDir}.reference.fasta
+        cp ${ref} scheme/${params.schemeDir}/${params.schemeVersion}/${params.schemeDir}.reference.fasta
         """
     } else {
         """
