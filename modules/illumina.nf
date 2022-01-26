@@ -138,6 +138,7 @@ process callVariants {
     path("${sampleName}.ambiguous.norm.vcf.gz*"), emit: amb_vcf_gz
     path("${sampleName}.mask.txt"), emit: mask
     path("${sampleName}.fixed.norm.vcf.gz*"), emit: fixed_vcf_gz
+    path("${sampleName}.variants.norm.vcf")
 
     script:
         """
