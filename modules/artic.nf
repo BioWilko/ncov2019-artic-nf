@@ -13,9 +13,20 @@ process articDownloadScheme{
     path "scheme" , emit: scheme
 
     script:
-    """
-    git clone ${params.schemeRepoURL} scheme
-    """ 
+
+    if(params.bed && params.ref){
+        bed = file(params.bed)
+        ref = file(params.ref)
+        """
+        mkdir -p scheme/${params.schemeDir}/${params.schemeVersion}/
+        cp ${bed} scheme/${params.schemeDir}/${params.schemeVersion}/${params.schemeDir}.scheme.bed
+        cp ${reffasta} scheme/${params.schemeDir}/${params.schemeVersion}/${params.schemeDir}.reference.fasta
+        """
+    } else {
+        """
+        git clone ${params.schemeRepoURL} scheme
+        """
+    }
 }
 
 process articGuppyPlex {
@@ -80,7 +91,7 @@ process articMinIONMedaka {
     artic minion --medaka \
     ${minionFinalConfig} \
     --threads ${task.cpus} \
-    --scheme-directory ${schemeRepo}/${params.schemeDir} \
+    --scheme-directory ${schemeRepo} \
     --read-file ${fastq}\
     --medaka-model ${params.medaka_model}\
     ${params.schemeDir}/${params.schemeVersion} ${sampleName}
@@ -127,7 +138,7 @@ process articMinIONNanopolish {
     """
     artic minion ${minionFinalConfig} \
     --threads ${task.cpus} \
-    --scheme-directory ${schemeRepo}/${params.schemeDir} \
+    --scheme-directory ${schemeRepo} \
     --read-file ${fastq} \
     --fast5-directory ${fast5Pass} \
     --sequencing-summary ${seqSummary} \

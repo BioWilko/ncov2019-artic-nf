@@ -29,6 +29,7 @@ workflow sequenceAnalysisNanopolish {
       ch_seqSummary
     
     main:
+    
       articDownloadScheme()
       
       articGuppyPlex(ch_runFastqDirs.flatten())
