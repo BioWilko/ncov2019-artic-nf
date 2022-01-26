@@ -21,6 +21,8 @@ You can also specify cram file output by passing the --outCram flag.
 
 You can avoid just the cloning of the scheme repository to remain on a fixed revision of it over time by passing --schemeRepoURL `file:///path/to/own/clone/of/github.com/artic-network/primer-schemes`.
 
+If you wish to use a custom primer scheme you can use the --bed and --ref flags (must be provided together) to provide a custom primer scheme bed file and reference fasta.
+
 ### Nanopore
 #### Nanopolish
 `nextflow run BioWilko/ncov2019-artic-nf [-profile mamba,conda,singularity,docker,slurm,lsf] --nanopolish --prefix "output_file_prefix" --basecalled_fastq /path/to/directory --fast5_pass /path/to/directory --sequencing_summary /path/to/sequencing_summary.txt`
@@ -60,6 +62,8 @@ Use `--nanopolish` or `--medaka` to run these workflows. `--basecalled_fastq` sh
 ```
 guppy_barcoder --require_barcodes_both_ends -i run_name -s output_directory --arrangements_files "barcode_arrs_nb12.cfg barcode_arrs_nb24.cfg"
 ```
+
+If basecalled reads have already been quality filtered the flag --skip_quality_check may be provided so that artic guppyplex does not do so again.
 
 ### Illumina
 Briefly, the Illumina workflow can be summarised as follows: Minimap2 -> align_trim -> FreeBayes -> Bcftools. Use `--illumina` to run the Illumina workflow. Use `--directory` to point to an Illumina output directory usually coded something like: `<date>_<machine_id>_<run_no>_<some_zeros>_<flowcell>`. The workflow will recursively grab all fastq files under this directory, so be sure that what you want is in there, and what you don't, isn't! 

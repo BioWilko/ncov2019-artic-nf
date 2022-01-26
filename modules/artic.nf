@@ -41,8 +41,15 @@ process articGuppyPlex {
     path "${params.prefix}*.fastq", emit: fastq
 
     script:
+
+    if (params.skip_quality_check) {
+        guppyplex_command = "artic guppyplex --skip-quality-check"
+    } else {
+        guppyplex_command = "artic guppyplex"
+    }
     """
-    artic guppyplex \
+    ${guppyplex_command} \
+    --skip-quality-check \
     --min-length ${params.min_length} \
     --max-length ${params.max_length} \
     --prefix ${params.prefix} \
