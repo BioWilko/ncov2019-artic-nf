@@ -128,6 +128,8 @@ process callVariants {
     tag { sampleName }
 
     publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.variants.norm.vcf", mode: 'copy'
+    publishDir "${params.outdir}/${task.process.replaceAll(":","_")}", pattern: "${sampleName}.gvcf", mode: 'copy'
+
 
     input:
     tuple val(sampleName), path(bam), path(ref)
@@ -139,6 +141,7 @@ process callVariants {
     path("${sampleName}.mask.txt"), emit: mask
     path("${sampleName}.fixed.norm.vcf.gz*"), emit: fixed_vcf_gz
     path("${sampleName}.variants.norm.vcf")
+    path("${sampleName}.gvcf")
 
     script:
         """
