@@ -6,16 +6,16 @@ process indexReference {
     tag { ref }
 
     input:
-        path(ref)
+    path(ref)
 
     output:
-        tuple path('ref.fa'), path('ref.mmi')
+    tuple path('ref.fa'), path('ref.mmi')
 
     script:
-        """
-        ln -s ${ref} ref.fa
-        minimap2 -x sr -d ref.mmi ref.fa
-        """
+    """
+    ln -s ${ref} ref.fa
+    minimap2 -x sr -d ref.mmi ref.fa
+    """
 }
 
 process readTrimming {

@@ -65,6 +65,8 @@ guppy_barcoder --require_barcodes_both_ends -i run_name -s output_directory --ar
 
 If basecalled reads have already been quality filtered the flag --skip_quality_check may be provided so that artic guppyplex does not do so again.
 
+If your fast5 files are compressed with [vbz compression](https://github.com/nanoporetech/vbz_compression) (now a default in minKNOW) then the environment variable `HDF5_PLUGIN_PATH` should be set within the `environments/nanopore/environment.yml` file to the directory containing your copy of the plugin `libvbz_hdf_plugin.so`.
+
 ### Illumina
 Briefly, the Illumina workflow can be summarised as follows: Minimap2 -> align_trim -> FreeBayes -> Bcftools. Use `--illumina` to run the Illumina workflow. Use `--directory` to point to an Illumina output directory usually coded something like: `<date>_<machine_id>_<run_no>_<some_zeros>_<flowcell>`. The workflow will recursively grab all fastq files under this directory, so be sure that what you want is in there, and what you don't, isn't! 
 

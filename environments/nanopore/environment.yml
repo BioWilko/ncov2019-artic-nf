@@ -4,4 +4,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - artic==1.2.1
+  - artic==1.2.2
+
+variables:
+  HDF5_PLUGIN_PATH: ""

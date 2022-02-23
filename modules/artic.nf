@@ -24,7 +24,7 @@ process articDownloadScheme{
         """
     } else {
         """
-        git clone ${params.schemeRepoURL} scheme
+        scheme_downloader.py ${params.schemeDir} ${params.schemeVersion}
         """
     }
 }
