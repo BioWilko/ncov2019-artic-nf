@@ -45,6 +45,8 @@ def get_scheme(scheme_name, scheme_version="1"):
     if scheme_name.find("/V") != -1:
         scheme_name, scheme_version = scheme_name.split("/V")
 
+    scheme_version = scheme_version.upper().replace("V", "")
+
     # create the filenames and check they exist
     bed = "scheme/%s/V%s/%s.scheme.bed" % (scheme_name, scheme_version, scheme_name)
     ref = "scheme/%s/V%s/%s.reference.fasta" % (
@@ -86,7 +88,7 @@ def get_scheme(scheme_name, scheme_version="1"):
                 scheme_version = scheme_contents["latest_version"]
             elif scheme_version not in dict(scheme_contents["primer_urls"]).keys():
                 print(
-                    f"Requested scheme version {scheme_version} not found; using latest version ({scheme_contents['latest_version']}) instead",
+                    f"Requested scheme version V{scheme_version} not found; using latest version (V{scheme_contents['latest_version']}) instead",
                     file=sys.stderr,
                 )
                 scheme_version = scheme_contents["latest_version"]

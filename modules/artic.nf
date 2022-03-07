@@ -1,7 +1,7 @@
 // ARTIC processes
 
 process articDownloadScheme{
-    tag params.schemeRepoURL
+    tag params.schemeVersion
 
     label 'internet'
 
